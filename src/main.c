@@ -89,49 +89,66 @@ int main (int argc, char **argv)
   }
 
 
-  bool recent_newline=false;
+  bool recent_newline=true;
   bool inComment=false;
+  bool justClosedComment=false;
   bool inSmallComment=false;
   size_t i=0;
+  
+
   while(i<=filestat.st_size){
-    ++i;
     if(data[i]=='\n'){
       if(recent_newline) ++c.stats.blank;
       else {
         if(!(inComment||inSmallComment)){
-          ++c.stats.code;
+          if(justClosedComment){
+            ++c.stats.comment;
+            justClosedComment=false;
+          }
+          else{
+            ++c.stats.code;
+            inSmallComment=false;
+          }
+        }
+        else{
+          ++c.stats.comment;
           inSmallComment=false;
         }
-        else ++c.stats.comment;
       }
       ++c.stats.line;
       recent_newline=true;
     }
     else {
+      justClosedComment=false;
+
       if(data[i]==c.snl_comment[0]){
         if(strncmp(&data[i], c.snl_comment, strlen(c.snl_comment))==0){
           while(data[i+1]!='\n') i++;
-          if(recent_newline) {
-            ++c.stats.comment;
-            inSmallComment=true;
-          }
+          if(recent_newline) inSmallComment=true;
         } 
       } 
       if(!inComment){
         if(data[i]==c.mtl_comment[0][0]){
           if(strncmp(&data[i], c.mtl_comment[0], strlen(c.mtl_comment[0]) )==0){
+            i+=strlen(c.mtl_comment[0])-1;
             inComment=true;
           }
         }
       } else{
         if(data[i]==c.mtl_comment[1][0]){
           if(strncmp(&data[i], c.mtl_comment[1], strlen(c.mtl_comment[1]) )==0){
+            i+=strlen(c.mtl_comment[0])-1;
             inComment=false;
+            justClosedComment=true;
           }
         }
       }
-      recent_newline=false;
+
+      if(data[i]!=' '&&data[i]!='\t')
+        recent_newline=false;
+
     }
+    ++i;
   }
   puts("Language:\tTotal Lines\tBlank Lines\tComment lines\tCode Lines");
   printf("c:\t\t%zu\t\t%zu\t\t%zu\t\t%zu\n", c.stats.line, c.stats.blank, c.stats.comment, c.stats.code);
@@ -145,7 +162,6 @@ void die(const char *str, ...){
   va_start(vp, str);
   vfprintf(stderr, str, vp);
   va_end(vp);
-  /* fputs(End, stderr); */
   exit(1);
 }
 
