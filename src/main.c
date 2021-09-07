@@ -39,8 +39,8 @@
 
 const char *strext(const char *filename) {
   const char *dot = strrchr(filename, '.');
-  if(!dot || dot == filename) return NULL;
-  return dot + 1;
+  if(!dot) return NULL;
+  return (dot==filename)?filename:dot + 1;
 }
 
 
@@ -56,21 +56,13 @@ void die(const char *str, ...);
 
 
 
-typedef struct {
-  size_t line, blank, comment, code, files;
-} stat_t ;
-
-
-typedef struct {
-  char *mtl_comment[2];
-  char *snl_comment;
-  stat_t stats;
-} language_t;
 
 
 
 int main (int argc, char **argv)
 {
+  /* printf("%s", lang_to_str(typefromext(strext(argv[1])))); */
+
   language_t c = {.mtl_comment={"/*", "*/"}, .snl_comment="//"};
 
   struct stat filestat;
@@ -78,14 +70,12 @@ int main (int argc, char **argv)
   if(fd==-1)
     pexit("Unable to open file", 2);
   if(fstat(fd, &filestat) !=0) {
-    perror("stat failed");
-    exit(1);
+    pexit("stat failed", 1);
   }
 
   char *data = mmap(NULL, filestat.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
   if(data == MAP_FAILED) {
-    perror("mmap failed");
-    exit(2);
+    pexit("mmap failed", 2);
   }
 
 

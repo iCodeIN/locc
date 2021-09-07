@@ -14,3 +14,7 @@ install:
 uninstall:
 	@rm -f $(DESTDIR)$(PREFIX)/bin/$(BIN)
 
+hash:
+	cc src/exthash/main.c -o hasher
+	./hasher
+	mv hash.h src
